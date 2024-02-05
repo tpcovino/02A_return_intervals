@@ -11,6 +11,8 @@ output:
 
 - In this learning module we will focus on return intervals. We first need to understand return intervals before we can move onto the rational method and curve numbers.
 
+The repo for this module can be found [here](https://github.com/tpcovino/02_return_intervals.git){target="_blank"}
+
 ## Background information
 
 Lecture from colleague Joel Sholtes on precipitation frequency analysis. 
