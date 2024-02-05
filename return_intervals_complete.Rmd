@@ -7,36 +7,33 @@ output:
     toc_float: true
 ---
 
-# Lab 2 - Return intervals, rational method, and SCS curve numbers
+# Learning module 2 - Return intervals (14 pts)
 
-- In this portion of lab 2, Lab 2A, we will focus on return intervals. Lab 2B will focus on the rational method and curve numbers.
+- In this learning module we will focus on return intervals. We first need to understand return intervals before we can move onto the rational method and curve numbers.
 
-- Lab 2A (14 pts)
+## Background information
 
-## Reading 
+Lecture from colleague Joel Sholtes on precipitation frequency analysis. 
 
-Rational method. Read at least sections 2 and 3.<br> 
-- [Link](https://www.waternz.org.nz/Attachment?Action=Download&Attachment_id=846){target="_blank"}
+<iframe width="560" height="315" src="https://www.youtube.com/embed/3_EnTJaFCKg?si=1BYvBzA1fDjZK4Zv" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
-NRCS module on estimating runoff using curve number (CN). <br>
-- [Link](https://cdn.serc.carleton.edu/files/geoinformatics/steps/presentation_selecting_cn_vari.pdf){target="_blank"}
 
-Slides on selecting curve number.<br>
-- [Link](https://cdn.serc.carleton.edu/files/geoinformatics/steps/presentation_selecting_cn_vari.pdf){target="_blank"}
+Short lecture on Intensity-Duration-Frequency (IDF) curves
 
-Time of concentration. Up to "other considerations", pages 15-1 to 15-9. <br>
-- [Link](https://directives.sc.egov.usda.gov/OpenNonWebContent.aspx?content=27002.wba#:~:text=Time%20of%20concentration%20(Tc)%20is,the%20watershed%20to%20the%20outlet.){target="_blank"}
+<iframe width="560" height="315" src="https://www.youtube.com/embed/JXSwKmfMZJo?si=nlHa4Th3ZCSzi2Ks" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
-- We will use the Kirpich method to calculate the time of concentration. Here is the citation for your reference.
+Reading on frequency analysis of flow (e.g., floods). You should notice that the frequency analysis is the same whether we apply it to Q (flow) or P (precipitation). So as long as you understand the fundamental principles you will be able to do frequency analysis on either Q or P. 
 
-Kirpich, Z.P. (1940). "Time of concentration of small agricultural watersheds". Civil Engineering. 10 (6): 362.
+https://www.usgs.gov/centers/new-jersey-water-science-center/floods-recurrence-intervals-and-100-year-floods{target="_blank"}
+
+There are also probability lecture slides on D2L. Titled "probability.pptx". 
 
  
 ## Intro
 
 In this lab we will look at some precipitation data to get an idea of return intervals for a given rain event. A return interval is the inverse of the probability. So if a certain rain even has a 10% probability of happening any year it has a 1/p return interval, so: R = 1/0.1 = 10 years. This means on average you can expect that size event about every ten years. From a probability perspective it is actually more correct to state that there is a 10% chance of that size rain event in any year. The reason this is better is that it communicates that you certainly can have a 10% probability event occur in back-to-back years.
 
-After computing some return intervals we will then use some of the simpler rainfall-runoff modeling approaches (the rational method and the curve number method) to simulate runoff for a hypothetical basin. 
+After computing some return intervals we will then use some of the simpler rainfall-runoff modeling approaches (the rational method and the curve number method) to simulate runoff for a hypothetical basin in our next unit. 
 
 This is knitr settings. Knitr is a package that will turn this Rmd to an html. 
 ```{r}
@@ -45,11 +42,15 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, results = F
 
 ## Packages
 
-We have a few new packages today. Those include rnoaa and leaflet. rnooa is a package used to download NOAA climate data. leaflet is a package for interactive mapping. 
+We have a few new packages today. Those include rnoaa and leaflet. rnooa is a package used to download NOAA climate data. leaflet is a package for interactive mapping.
+
+Recall that if you have not installed these packages on your computer you will need to run:
+
+install.packages("rnoaa") and so on for the others. 
 
 ```{r}
 library(tidyverse)
-library(rnoaa)
+library(rnoaa) #this package is being deprecated, unfortunately. But should work for now. 
 library(plotly)
 library(leaflet)
 ```
@@ -71,14 +72,14 @@ station_data_download <- ghcnd_stations()
 station_data <- station_data_download %>% 
   filter(state == "MT")
 
-# that's still a lot of stations. Let thin for "GALLATIN"
+# that's still a lot of stations. Let thin for "BOZEMAN"
 
 station_data_bzn <- station_data %>% 
   filter(str_detect(name, "BOZEMAN")) %>% 
   # get rid of duplicate ids to make plotting easier
   dplyr::distinct(id, .keep_all = TRUE)
 
-# Now, let's create a zoomable map with the stations around Gallatin County. Click around and find the station id for the precip gauge with the LONGER timeseries. If you click on a station symbol, the first and last data year will appear. Obviously you can get this information from the station_data_gal data frame, but I wanted to show you the mapping capabilities. 
+# Now, let's create a zoomable map with the stations around Gallatin County/Bozeman. Click around and find the station id for the precip gauge with the LONGEST timeseries. If you click on a station symbol, the first and last data year will appear. Obviously you can get this information from the station_data_gal data frame, but I wanted to show you the mapping capabilities. 
 
 gauge_map <- leaflet() %>% 
     # add a basemap
@@ -143,9 +144,9 @@ climate_data_corr %>%
 
 How do the data look? Do they make sense? Do you see any strange values? 
 
-There is a large snow event in 1951. We can assume that is "real", so let's keep it in the analysis. But you should think through how you could exclude it from the analysis. 
+There is a large snow event in 1951. We can assume that is "real", so let's keep it in the analysis. But you should think through how you could exclude it from the analysis. How could you use the filter function to do that? 
 
-Next, we want to use some skills from Lab 1 to add a WY column. Try that here. 
+Next, we want to use some skills from the hydrograph sep lab to add a water year (WY) column. Try that here. 
 ```{r}
 climate_data_corr <- climate_data_corr %>% 
   mutate(month = month(date),
@@ -159,13 +160,13 @@ climate_data_corr <- climate_data_corr %>%
   select(name, id, date, wy, everything())
 ```
 
-Now, create a new df called climate_an where you calculate the total P (i.e., the sum) for each water year. Use group_by and summarize. Also keep in mind that you will need to deal with NA values in the df. How do you do that in summarize? As a note, reframe can be used instead of summarize and is a more general purpose function. You can try each.   
+Now, create a new df called climate_an where you calculate the total P (i.e., the sum) for each water year. Use group_by and summarize (or better yet, reframe). Also keep in mind that you will need to deal with NA values in the df. How do you do that in summarize? As a note, reframe can be used instead of summarize and is a more general purpose function. You can try each.   
 ```{r}
 climate_an <- climate_data_corr %>% 
   group_by(wy) %>% 
-  summarise(tot_p = sum(prcp,  na.rm = TRUE), 
+  reframe(tot_p = sum(prcp,  na.rm = TRUE), 
             mean_max = mean(tmax, na.rm = TRUE), 
-            mean_min = min(tmin, na.rm = TRUE)) # I also calculate some temp stas here. Just out of curiousity. We don't use them in this lab. 
+            mean_min = min(tmin, na.rm = TRUE)) # I also calculate some temp stats here. Just out of curiousity. We don't use them in this lab. 
   
 ```
 
@@ -180,9 +181,9 @@ climate_an %>%
 ```
 
 
-Now let's calculate some probabilities. Look up the `pnorm()` function for this (either type it into the Help window, or type ?pnorm in the console. You only need x, the mean, and sd for the calculations.
+Now let's calculate some probabilities. Look up the `pnorm()` function for this (either type it into the Help window, or type ?pnorm in the console. You only need x, the mean, and standard deviation (sd) for the calculations.
 
-### **Q1. (2 pts) What is the probability that the annual precipitation in a given year is less than 400 mm? This is the F(A) in the CDF in the lecture slides.** 
+### **Q1. (2 pts) What is the probability that the annual precipitation in a given year is less than 400 mm? This is the F(A) in the CDF in the probability lecture slides.** 
 
 ```{r}
 p_400 <- pnorm(400, mean(climate_an$tot_p), sd(climate_an$tot_p))
@@ -196,7 +197,7 @@ Q1 ANSWER:
 ```{r}
 p_500 <- pnorm(500, mean(climate_an$tot_p), sd(climate_an$tot_p))
 ex_500 <- 1 - p_500
-
+ex_500
 ```
 
 Q2 ANSWER:
@@ -206,6 +207,7 @@ Q2 ANSWER:
 ```{r}
 p_500_400 <- p_500 - p_400
 
+p_500_400
 ```
 
 
@@ -216,6 +218,7 @@ p_550 <- pnorm(550, mean(climate_an$tot_p), sd(climate_an$tot_p))
 ex_550 <- 1 - p_550
 
 ri <- 1/ex_550
+ri
 ```
 
 ### **Q5. (6 pts) Explain why probability analysis of climate data assumes the data are normally distributed and stationary? Below provide a histogram and a density plot of the total annual P data and comment on the visual appearance in terms of normality. Next use google and the links below to test for normality and stationarity. Be quantitative in commenting on the normality and stationarity of the total P data.** 
