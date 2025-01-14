@@ -54,6 +54,7 @@ library(tidyverse)
 library(rnoaa) #this package is being deprecated, unfortunately. But should work for now. 
 library(plotly)
 library(leaflet)
+library(lubridate)
 ```
 
 ## Precipitation return intervals 
